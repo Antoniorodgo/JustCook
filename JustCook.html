@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Recetas con Ingredientes</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>Busca recetas con tus ingredientes</h1>
+  <form id="ingredientes-form">
+    <label for="ingredientes">Introduce los ingredientes (separados por comas):</label>
+    <input type="text" id="ingredientes" placeholder="Ej: tomate, queso, pan" required />
+    <button type="submit">Buscar Recetas</button>
+  </form>
+
+  <div class="recetas" id="resultado">
+    <!-- Aquí se mostrarán las recetas -->
+  </div>
+
+  <script>
+    
+  const API_KEY = "73a53fb09b514c5e933103bf058ff63e"; // Sustituye con tu clave
+
+  document.getElementById("ingredientes-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const input = document.getElementById("ingredientes").value.toLowerCase();
+    const ingredientes = input.split(",").map(i => i.trim()).join(","); // Formato requerido por la API
+
+    const url = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${ingredientes}&number=5&apiKey=${API_KEY}`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const resultadoDiv = document.getElementById("resultado");
+        resultadoDiv.innerHTML = "";
+
+        if (data.length > 0) {
+          data.forEach(receta => {
+            const div = document.createElement("div");
+            div.classList.add("receta");
+            div.innerHTML = `
+              <h3>${receta.title}</h3>
+              <img src="${receta.image}" alt="${receta.title}" width="200">
+            `;
+            resultadoDiv.appendChild(div);
+          });
+        } else {
+          resultadoDiv.textContent = "No se encontraron recetas con esos ingredientes.";
+        }
+      })
+      .catch(error => {
+        console.error("Error al obtener recetas:", error);
+        document.getElementById("resultado").textContent = "Hubo un error al buscar recetas.";
+      });
+  });
+
+
+  </script>
+</body>
+</html>
