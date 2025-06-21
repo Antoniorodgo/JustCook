@@ -14,48 +14,94 @@
     <button type="submit">Buscar Recetas</button>
   </form>
 
-  <div class="recetas" id="resultado">
-    <!-- Aquí se mostrarán las recetas -->
+  <div id="loader" style="display:none;">
+    <div class="spinner"></div>
   </div>
 
+  <div class="recetas" id="resultado"></div>
+
   <script>
-    
-  const API_KEY = "73a53fb09b514c5e933103bf058ff63e"; // Sustituye con tu clave
+    const API_KEY = "73a53fb09b514c5e933103bf058ff63e";
 
-  document.getElementById("ingredientes-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const input = document.getElementById("ingredientes").value.toLowerCase();
-    const ingredientes = input.split(",").map(i => i.trim()).join(","); // Formato requerido por la API
+    document.getElementById("ingredientes-form").addEventListener("submit", function (e) {
+      e.preventDefault();
 
-    const url = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${ingredientes}&number=5&apiKey=${API_KEY}`;
+      const loader = document.getElementById("loader");
+      const resultadoDiv = document.getElementById("resultado");
+      
+      loader.style.display = "block";    // Mostrar spinner al iniciar
+      resultadoDiv.innerHTML = "";       // Limpiar resultados previos
 
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        const resultadoDiv = document.getElementById("resultado");
-        resultadoDiv.innerHTML = "";
+      const input = document.getElementById("ingredientes").value.toLowerCase();
+      const ingredientes = input.split(",").map(i => i.trim()).join(",");
 
-        if (data.length > 0) {
-          data.forEach(receta => {
-            const div = document.createElement("div");
-            div.classList.add("receta");
-            div.innerHTML = `
-              <h3>${receta.title}</h3>
-              <img src="${receta.image}" alt="${receta.title}" width="200">
-            `;
-            resultadoDiv.appendChild(div);
-          });
-        } else {
-          resultadoDiv.textContent = "No se encontraron recetas con esos ingredientes.";
-        }
-      })
-      .catch(error => {
-        console.error("Error al obtener recetas:", error);
-        document.getElementById("resultado").textContent = "Hubo un error al buscar recetas.";
-      });
-  });
+      const url = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${ingredientes}&number=5&apiKey=${API_KEY}`;
 
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          loader.style.display = "none"; // Ocultar spinner al recibir datos
+          resultadoDiv.innerHTML = "";
 
+          if (data.length > 0) {
+            data.forEach(receta => {
+              const textoATraducir = [
+                receta.title,
+                ...receta.usedIngredients.map(i => i.original),
+                ...receta.missedIngredients.map(i => i.original)
+              ];
+
+              fetch("https://libretranslate.de/translate", {
+                method: "POST",
+                body: JSON.stringify({
+                  q: textoATraducir,
+                  source: "en",
+                  target: "es",
+                  format: "text"
+                }),
+                headers: { "Content-Type": "application/json" }
+              })
+              .then(res => res.json())
+              .then(traducciones => {
+                const [tituloTraducido, ...ingredientesTraducidos] = traducciones.map(t => t.translatedText);
+                const ingredientesHTML = ingredientesTraducidos.map(i => `<li>${i}</li>`).join("");
+
+                const div = document.createElement("div");
+                div.classList.add("receta");
+                div.innerHTML = `
+                  <h3>${tituloTraducido}</h3>
+                  <img src="${receta.image}" alt="${tituloTraducido}" width="200">
+                  <h4>Ingredientes necesarios: </h4>
+                  <ul>${ingredientesHTML}</ul>
+                `;
+                resultadoDiv.appendChild(div);
+              })
+              .catch(err => {
+                console.error("Error al traducir:", err);
+                const div = document.createElement("div");
+                div.classList.add("receta");
+                div.innerHTML = `
+                  <h3>${receta.title}</h3>
+                  <img src="${receta.image}" alt="${receta.title}" width="200">
+                  <h4>Ingredientes necesarios:</h4>
+                  <ul>
+                    ${receta.usedIngredients.map(i => `<li>${i.original}</li>`).join("")}
+                    ${receta.missedIngredients.map(i => `<li>${i.original}</li>`).join("")}
+                  </ul>
+                `;
+                resultadoDiv.appendChild(div);
+              });
+            });
+          } else {
+            resultadoDiv.textContent = "No se encontraron recetas con esos ingredientes.";
+          }
+        })
+        .catch(error => {
+          loader.style.display = "none"; // Ocultar spinner al recibir datos
+          console.error("Error al obtener recetas:", error);
+          resultadoDiv.textContent = "Hubo un error al buscar recetas.";
+        });
+    });
   </script>
 </body>
 </html>

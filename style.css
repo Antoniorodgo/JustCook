@@ -47,3 +47,27 @@ button:hover {
   border-bottom: 1px solid #ccc;
   padding: 0.5rem 0;
 }
+
+
+/* Estilo del contenedor del spinner */
+#loader {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Spinner circular */
+.spinner {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+/* Animación */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
